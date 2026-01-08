@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "65209678350",
+    "project_id": "asian-cable-fiber",
+    "storage_bucket": "asian-cable-fiber.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:65209678350:android:bb34b3d07c20d3e7221a5f",
+        "android_client_info": {
+          "package_name": "com.example.asian_cable_fiber"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAo3dDApXc51CiSlvCz3RmIMQkzLxmF2jw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
