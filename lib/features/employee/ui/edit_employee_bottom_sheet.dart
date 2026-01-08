@@ -130,7 +130,7 @@ class _EditEmployeeBottomSheetState extends State<EditEmployeeBottomSheet> {
               },
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 16 ),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
