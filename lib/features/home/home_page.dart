@@ -5,9 +5,8 @@ import '../../core/widgets/side_menu.dart';
 import '../employee/bloc/employee_bloc.dart';
 import '../employee/bloc/employee_event.dart';
 import '../employee/data/employee_repository.dart';
-import '../employee/ui/add_employee_page.dart';
 import '../employee/ui/employee_list_page.dart';
-import '../task/task_page.dart';
+import '../task/ui/task_page.dart';
 import '../settings/settings_page.dart';
 
 
@@ -34,14 +33,6 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ),
-
-      // ✅ Add Employee page WITH Bloc
-      RepositoryProvider(
-        create: (_) => EmployeeRepository(),
-        child: AddEmployeePage(),
-      ),
-
-
       BlocProvider(
         create: (_) => EmployeeBloc(EmployeeRepository())
           ..add(WatchEmployeesRequested()),

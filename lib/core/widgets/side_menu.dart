@@ -46,12 +46,8 @@ class SideMenu extends StatelessWidget {
           label: Text('Dashboard'),
         ),
         NavigationRailDestination(
-          icon: Icon(Icons.people),
+          icon: Icon(Icons.people_outline_outlined),
           label: Text('Employees'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.list_alt),
-          label: Text('Employees List'),
         ),
         NavigationRailDestination(
           icon: Icon(Icons.assignment),

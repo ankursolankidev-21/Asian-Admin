@@ -5,6 +5,7 @@ import '../bloc/employee_bloc.dart';
 import '../bloc/employee_event.dart';
 import '../bloc/employee_state.dart';
 import '../data/employee_model.dart';
+import 'add_employee_bottom_sheet.dart';
 import 'edit_employee_bottom_sheet.dart';
 
 class EmployeeListPage extends StatefulWidget {
@@ -24,7 +25,27 @@ class _EmployeeListPageState extends State<EmployeeListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Employees')),
+      appBar: AppBar(
+        title: const Text('Employees'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: ElevatedButton(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  builder: (_) => const AddEmployeeBottomSheet(),
+                );
+              },
+              child: const Text('Add Employee'),
+            ),
+          ),
+        ],
+      ),
       body: BlocBuilder<EmployeeBloc, EmployeeState>(
         builder: (context, state) {
           if (state is EmployeeLoading) {
