@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../bloc/auth/auth_bloc.dart';
 import '../../../bloc/auth/auth_event.dart';
 import '../../../bloc/auth/auth_state.dart';
+import '../../../core/storage/secure_storage.dart';
 import '../../../core/widgets/app_text_field.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,6 +18,14 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLogin();
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -28,11 +37,19 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
+          }else{
+            await SecureStorage.saveLogin(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+              rememberMe: _rememberMe,
+            );
+            Navigator.pushReplacementNamed(context, '/home');
+
           }
         },
         child: Center(
@@ -67,7 +84,20 @@ class _LoginPageState extends State<LoginPage> {
                   showRequiredMark: true,
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _rememberMe,
+                      onChanged: (v) {
+                        setState(() => _rememberMe = v ?? false);
+                      },
+                    ),
+                    const Text('Remember me'),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
 
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
@@ -109,5 +139,20 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
+  }
+  Future<void> _loadSavedLogin() async {
+    final email = await SecureStorage.getEmail();
+    final password = await SecureStorage.getPassword();
+    final remember = await SecureStorage.getRememberMe();
+
+    if (email != null) {
+      _emailController.text = email;
+    }
+
+    if (remember && password != null) {
+      _passwordController.text = password;
+    }
+
+    setState(() => _rememberMe = remember);
   }
 }

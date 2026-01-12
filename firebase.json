@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"asian-cable-fiber","appId":"1:65209678350:android:bb34b3d07c20d3e7221a5f","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"asian-cable-fiber","configurations":{"android":"1:65209678350:android:bb34b3d07c20d3e7221a5f","ios":"1:65209678350:ios:6573319b7eb234f0221a5f","macos":"1:65209678350:ios:6573319b7eb234f0221a5f","web":"1:65209678350:web:497210ce76b694ea221a5f","windows":"1:65209678350:web:1248198ec666ce24221a5f"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "asian-cable-fiber",
+          "appId": "1:65209678350:android:bb34b3d07c20d3e7221a5f",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "asian-cable-fiber",
+          "configurations": {
+            "android": "1:65209678350:android:bb34b3d07c20d3e7221a5f",
+            "ios": "1:65209678350:ios:6573319b7eb234f0221a5f",
+            "macos": "1:65209678350:ios:6573319b7eb234f0221a5f",
+            "web": "1:65209678350:web:497210ce76b694ea221a5f",
+            "windows": "1:65209678350:web:1248198ec666ce24221a5f"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
