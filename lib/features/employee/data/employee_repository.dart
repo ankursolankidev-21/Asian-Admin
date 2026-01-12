@@ -4,6 +4,9 @@ import 'employee_model.dart';
 class EmployeeRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// ---------------------------
+  /// ADD EMPLOYEE
+  /// ---------------------------
   Future<void> addEmployee(EmployeeModel employee) async {
     final query = await _firestore
         .collection('employees')
@@ -18,7 +21,9 @@ class EmployeeRepository {
     await _firestore.collection('employees').add(employee.toMap());
   }
 
-  ///--- Employee list
+  /// ---------------------------
+  /// WATCH ALL EMPLOYEES
+  /// ---------------------------
   Stream<List<EmployeeModel>> watchEmployees() {
     return _firestore
         .collection('employees')
@@ -30,7 +35,9 @@ class EmployeeRepository {
     );
   }
 
-
+  /// ---------------------------
+  /// UPDATE ACTIVE STATUS
+  /// ---------------------------
   Future<void> updateEmployeeActive({
     required String employeeId,
     required bool isActive,
@@ -41,7 +48,9 @@ class EmployeeRepository {
         .update({'isActive': isActive});
   }
 
-  ///--- Update Employee
+  /// ---------------------------
+  /// UPDATE EMPLOYEE
+  /// ---------------------------
   Future<void> updateEmployee(EmployeeModel employee) async {
     final query = await _firestore
         .collection('employees')
@@ -59,4 +68,22 @@ class EmployeeRepository {
         .doc(employee.id)
         .update(employee.toMap());
   }
+
+  /// ---------------------------
+  /// FETCH ACTIVE EMPLOYEES (FOR TASK ASSIGNMENT)
+  /// ---------------------------
+  Future<List<Map<String, String>>> fetchActiveEmployees() async {
+    final snapshot = await _firestore
+        .collection('employees')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      return {
+        'id': doc.id,
+        'name': doc['name'] as String,
+      };
+    }).toList();
+  }
+
 }

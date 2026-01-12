@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/widgets/app_dropdown_field.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/widgets/app_dropdown_field.dart';
+import '../../employee/data/employee_repository.dart';
+import '../data/task_model.dart';
+import '../data/task_repository.dart';
 
 class AddTaskSheet extends StatefulWidget {
   const AddTaskSheet({super.key});
@@ -11,13 +15,25 @@ class AddTaskSheet extends StatefulWidget {
 }
 
 class _AddTaskSheetState extends State<AddTaskSheet> {
-  String _taskType = 'Collection';
-  String? _assignedEmployee;
-
   final _areaController = TextEditingController();
   final _addressController = TextEditingController();
 
+  String _taskType = 'Collection';
+
+  String? _employeeId;
+  String? _employeeName;
+
+  List<Map<String, String>> _employees = [];
+  bool _loadingEmployees = true;
+
   DateTime _taskDate = DateTime.now();
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmployees();
+  }
 
   @override
   void dispose() {
@@ -26,25 +42,63 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
     super.dispose();
   }
 
-  void _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _taskDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-
-    if (picked != null) {
+  // 🔹 LOAD ACTIVE EMPLOYEES
+  Future<void> _loadEmployees() async {
+    try {
+      final data =
+      await context.read<EmployeeRepository>().fetchActiveEmployees();
       setState(() {
-        _taskDate = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          _taskDate.hour,
-          _taskDate.minute,
-        );
+        _employees = data;
+        _loadingEmployees = false;
       });
+    } catch (e) {
+      _show('Failed to load employees');
+      setState(() => _loadingEmployees = false);
     }
+  }
+
+  // 🔹 SAVE TASK TO FIREBASE
+  Future<void> _saveTask() async {
+    final area = _areaController.text.trim();
+    final address = _addressController.text.trim();
+
+    if (area.isEmpty ||
+        address.isEmpty ||
+        _employeeId == null ||
+        _employeeName == null) {
+      _show('Please fill all required fields');
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    try {
+      final task = TaskModel(
+        id: '',
+        type: _taskType,
+        area: area,
+        address: address,
+        employeeId: _employeeId!,
+        employeeName: _employeeName!,
+        status: 'pending',
+        taskDate: _taskDate,
+        createdAt: DateTime.now(),
+      );
+
+      await context.read<TaskRepository>().addTask(task);
+
+      _show('Task added successfully');
+      Navigator.pop(context);
+    } catch (e) {
+      _show(e.toString());
+    } finally {
+      setState(() => _saving = false);
+    }
+  }
+
+  void _show(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
@@ -60,7 +114,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// HEADER
+          // HEADER
           Row(
             children: [
               const Text(
@@ -77,7 +131,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
 
           const SizedBox(height: 12),
 
-          /// TASK TYPE
+          // TASK TYPE
           AppDropdownField<String>(
             label: 'Task Type',
             value: _taskType,
@@ -92,52 +146,80 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
 
           const SizedBox(height: 12),
 
-          /// AREA
+          // AREA
           AppTextField(
-            controller: _areaController,
             label: 'Area',
-          ),
-          const SizedBox(height: 12),
-
-          /// ADDRESS
-          AppTextField(
-            controller: _addressController,
-            label: 'Address',
-          ),
-
-          const SizedBox(height: 12),
-
-          /// ASSIGN EMPLOYEE (DUMMY FOR NOW)
-          AppDropdownField<String>(
-            label: 'Assign To',
-            value: _assignedEmployee,
+            controller: _areaController,
             showRequiredMark: true,
-            items: const [
-              DropdownMenuItem(value: 'emp1', child: Text('Employee 1')),
-              DropdownMenuItem(value: 'emp2', child: Text('Employee 2')),
-            ],
-            onChanged: (v) => setState(() => _assignedEmployee = v),
           ),
+
           const SizedBox(height: 12),
 
-          /// DATE & TIME
+          // ADDRESS
+          AppTextField(
+            label: 'Address',
+            controller: _addressController,
+            maxLines: 2,
+            showRequiredMark: true,
+          ),
+
+          const SizedBox(height: 12),
+
+          // ASSIGN EMPLOYEE
+          _loadingEmployees
+              ? const Center(child: CircularProgressIndicator())
+              : AppDropdownField<String>(
+            label: 'Assign To',
+            value: _employeeId,
+            showRequiredMark: true,
+            items: _employees
+                .map(
+                  (e) => DropdownMenuItem<String>(
+                value: e['id'],
+                child: Text(e['name']!),
+              ),
+            )
+                .toList(),
+            onChanged: (id) {
+              final emp =
+              _employees.firstWhere((e) => e['id'] == id);
+              setState(() {
+                _employeeId = id;
+                _employeeName = emp['name'];
+              });
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          // DATE
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'Date: ${_taskDate.toString().substring(0, 16)}',
+                  'Date: ${_taskDate.day}/${_taskDate.month}/${_taskDate.year}',
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.edit_calendar),
-                onPressed: _pickDate,
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _taskDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    setState(() => _taskDate = picked);
+                  }
+                },
               ),
             ],
           ),
 
           const SizedBox(height: 20),
 
-          /// ACTION BUTTONS
+          // ACTION BUTTONS
           Row(
             children: [
               Expanded(
@@ -149,10 +231,14 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Firebase comes later
-                  },
-                  child: const Text('Add Task'),
+                  onPressed: _saving ? null : _saveTask,
+                  child: _saving
+                      ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text('Add Task'),
                 ),
               ),
             ],

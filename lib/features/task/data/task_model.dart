@@ -7,7 +7,7 @@ class TaskModel {
   final String address;
   final String employeeId;
   final String employeeName;
-  final String status;
+  final String status; // pending / done
   final DateTime taskDate;
   final DateTime createdAt;
 
@@ -23,22 +23,20 @@ class TaskModel {
     required this.createdAt,
   });
 
-  /// FROM FIRESTORE
   factory TaskModel.fromJson(String id, Map<String, dynamic> json) {
     return TaskModel(
       id: id,
-      type: json['type'] as String,
-      area: json['area'] as String,
-      address: json['address'] as String,
-      employeeId: json['employeeId'] as String,
-      employeeName: json['employeeName'] as String,
-      status: json['status'] as String,
+      type: json['type'],
+      area: json['area'],
+      address: json['address'],
+      employeeId: json['employeeId'],
+      employeeName: json['employeeName'],
+      status: json['status'],
       taskDate: (json['taskDate'] as Timestamp).toDate(),
       createdAt: (json['createdAt'] as Timestamp).toDate(),
     );
   }
 
-  /// TO FIRESTORE
   Map<String, dynamic> toJson() {
     return {
       'type': type,
