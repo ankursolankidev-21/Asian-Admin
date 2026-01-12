@@ -24,3 +24,13 @@ class UpdateEmployeeRequested extends EmployeeEvent {
 
   UpdateEmployeeRequested(this.employee);
 }
+
+class ResetEmployeePasswordRequested extends EmployeeEvent {
+  final String employeeId;
+  final String newPassword;
+
+  ResetEmployeePasswordRequested({
+    required this.employeeId,
+    required this.newPassword,
+  });
+}

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,40 +23,27 @@ class EditEmployeeBottomSheet extends StatefulWidget {
 
 class _EditEmployeeBottomSheetState extends State<EditEmployeeBottomSheet> {
   late final TextEditingController _nameController;
-  late final TextEditingController _phoneController;
   late bool _isActive;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.employee.name);
-    _phoneController = TextEditingController(text: widget.employee.phone);
     _isActive = widget.employee.isActive;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
   void _updateEmployee() {
     final name = _nameController.text.trim();
-    final phone = _phoneController.text.trim();
 
-    final phoneRegex = RegExp(r'^[0-9]{10}$');
-
-    if (name.isEmpty || phone.isEmpty) {
+    if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name and phone are required')),
-      );
-      return;
-    }
-
-    if (!phoneRegex.hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Phone must be exactly 10 digits')),
+        const SnackBar(content: Text('Name is required')),
       );
       return;
     }
@@ -64,15 +52,76 @@ class _EditEmployeeBottomSheetState extends State<EditEmployeeBottomSheet> {
       UpdateEmployeeRequested(
         widget.employee.copyWith(
           name: name,
-          phone: phone,
           isActive: _isActive,
         ),
       ),
     );
 
-    // ✅ Close bottom sheet immediately
     Navigator.pop(context);
   }
+
+  void _resetPassword() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Password Reset'),
+        content: Text(
+          'This will generate a NEW password for\n'
+              '${widget.employee.name}.\n\n'
+              'The old password will stop working immediately.\n\n'
+              'Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Reset Password'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // ✅ Generate password only AFTER confirmation
+    final newPassword = (100000 + DateTime.now().millisecondsSinceEpoch % 900000)
+        .toString();
+
+    context.read<EmployeeBloc>().add(
+      ResetEmployeePasswordRequested(
+        employeeId: widget.employee.id,
+        newPassword: newPassword,
+      ),
+    );
+
+    // ✅ Show password ONCE
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Password Reset Successful'),
+        content: Text(
+          'New Password:\n\n'
+              '$newPassword\n\n'
+              'Share this securely with the employee.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -109,43 +158,38 @@ class _EditEmployeeBottomSheetState extends State<EditEmployeeBottomSheet> {
 
             const SizedBox(height: 12),
 
-            AppTextField(
-              label: 'Phone Number',
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              showRequiredMark: true,
-            ),
-
-            const SizedBox(height: 12),
-
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _isActive,
               title: const Text('Active'),
               subtitle: const Text('Disable to block employee'),
               onChanged: (value) {
-                setState(() {
-                  _isActive = value;
-                });
+                setState(() => _isActive = value);
               },
             ),
 
-            const SizedBox(height: 16 ),
+            const SizedBox(height: 12),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _resetPassword,
+                child: const Text('Reset Password'),
+              ),
+            ),
+
+            const SizedBox(height: 16),
 
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SizedBox(
-                  width: 200,
-                  height: 44,
+                Expanded(
                   child: ElevatedButton(
                     onPressed: _updateEmployee,
                     child: const Text('Update Employee'),
                   ),
                 ),
-                SizedBox(
-                  width: 200,
-                  height: 44,
+                const SizedBox(width: 12),
+                Expanded(
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Discard'),

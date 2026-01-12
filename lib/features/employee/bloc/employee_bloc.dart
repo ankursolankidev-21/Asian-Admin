@@ -12,7 +12,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     on<AddEmployeeRequested>(_onAddEmployee);
     on<ToggleEmployeeActiveRequested>(_onToggleActive);
     on<UpdateEmployeeRequested>(_onUpdateEmployee);
-
+    on<ResetEmployeePasswordRequested>(_onResetPassword);
   }
 
   /// 🔴 LIVE STREAM (NEVER COMPLETES)
@@ -78,4 +78,23 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
+  /// 🔐 RESET PASSWORD (WRITE ONLY)
+  Future<void> _onResetPassword(
+      ResetEmployeePasswordRequested event,
+      Emitter<EmployeeState> emit,
+      ) async {
+    try {
+      await repository.resetPassword(
+        employeeId: event.employeeId,
+        newPassword: event.newPassword,
+      );
+      // ❌ DO NOT emit success
+      // Firestore stream does not change list
+    } catch (e) {
+      if (!emit.isDone) {
+        emit(EmployeeError(e.toString()));
+      }
+    }
+  }
 }
+

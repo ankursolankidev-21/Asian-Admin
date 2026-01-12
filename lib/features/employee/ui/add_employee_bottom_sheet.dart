@@ -9,12 +9,14 @@ class AddEmployeeBottomSheet extends StatefulWidget {
   const AddEmployeeBottomSheet({super.key});
 
   @override
-  State<AddEmployeeBottomSheet> createState() => _AddEmployeeBottomSheetState();
+  State<AddEmployeeBottomSheet> createState() =>
+      _AddEmployeeBottomSheetState();
 }
 
 class _AddEmployeeBottomSheetState extends State<AddEmployeeBottomSheet> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   bool _isActive = true;
   bool _saving = false;
@@ -23,22 +25,35 @@ class _AddEmployeeBottomSheetState extends State<AddEmployeeBottomSheet> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  String _generatePassword() {
+    return (100000 +
+        DateTime.now().millisecondsSinceEpoch % 900000)
+        .toString();
   }
 
   Future<void> _saveEmployee() async {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
 
     final phoneRegex = RegExp(r'^[0-9]{10}$');
 
-    if (name.isEmpty || phone.isEmpty) {
-      _show('Name and phone are required');
+    if (name.isEmpty || phone.isEmpty || password.isEmpty) {
+      _show('Name, phone and password are required');
       return;
     }
 
     if (!phoneRegex.hasMatch(phone)) {
       _show('Phone number must be exactly 10 digits');
+      return;
+    }
+
+    if (password.length < 4) {
+      _show('Password must be at least 4 characters');
       return;
     }
 
@@ -50,14 +65,16 @@ class _AddEmployeeBottomSheetState extends State<AddEmployeeBottomSheet> {
           id: '',
           name: name,
           phone: phone,
+          password: password,
+          role: 'employee',
           isActive: _isActive,
           createdAt: DateTime.now(),
         ),
       );
 
-      _show('Employee added successfully');
+      _show('Employee added. Password: $password');
 
-      Navigator.pop(context); // ✅ CLOSE BOTTOM SHEET
+      Navigator.pop(context);
     } catch (e) {
       _show(e.toString());
     } finally {
@@ -87,21 +104,46 @@ class _AddEmployeeBottomSheetState extends State<AddEmployeeBottomSheet> {
             controller: _nameController,
             showRequiredMark: true,
           ),
+
           const SizedBox(height: 16),
+
           AppTextField(
             label: 'Phone Number',
             controller: _phoneController,
             keyboardType: TextInputType.phone,
             showRequiredMark: true,
           ),
+
           const SizedBox(height: 16),
+
+          AppTextField(
+            label: 'Password',
+            controller: _passwordController,
+            obscure: true,
+            showRequiredMark: true,
+          ),
+
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                final pwd = _generatePassword();
+                _passwordController.text = pwd;
+                _show('Password generated');
+              },
+              child: const Text('Generate Password'),
+            ),
+          ),
+
           SwitchListTile(
             value: _isActive,
             title: const Text('Active'),
             subtitle: const Text('Disable to block employee'),
             onChanged: (v) => setState(() => _isActive = v),
           ),
+
           const SizedBox(height: 24),
+
           SizedBox(
             width: double.infinity,
             height: 44,

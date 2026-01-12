@@ -86,4 +86,15 @@ class EmployeeRepository {
     }).toList();
   }
 
+  Future<void> resetPassword({
+    required String employeeId,
+    required String newPassword,
+  }) async {
+    await _firestore.collection('employees').doc(employeeId).update({
+      'password': newPassword,
+      'lastPasswordResetAt': Timestamp.now(),
+    });
+  }
+
+
 }
