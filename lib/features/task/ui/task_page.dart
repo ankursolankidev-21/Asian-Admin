@@ -13,17 +13,16 @@ class TaskPage extends StatefulWidget {
 }
 
 class _TaskPageState extends State<TaskPage> {
-  String _statusFilter = 'all'; // all / pending / done
-  String _sortFilter = 'newest';     // newest / oldest / area
+  String _statusFilter = 'all'; // all / pending / completed
+  String _sortFilter = 'newest'; // newest / oldest / area
 
-
-  Future<List<TaskModel>> _loadTasks() {
+  Stream<List<TaskModel>> _taskStream() {
     final repo = context.read<TaskRepository>();
 
     if (_statusFilter == 'all') {
-      return repo.fetchTasks();
+      return repo.watchAllTasks();
     } else {
-      return repo.fetchTasksByStatus(_statusFilter);
+      return repo.watchTasksByStatus(_statusFilter);
     }
   }
 
@@ -45,9 +44,7 @@ class _TaskPageState extends State<TaskPage> {
                 ),
                 builder: (_) => const AddTaskSheet(),
               );
-
-              // 🔄 Refresh list after closing bottom sheet
-              setState(() {});
+              // ❌ NO manual refresh needed anymore
             },
           ),
         ],
@@ -64,11 +61,10 @@ class _TaskPageState extends State<TaskPage> {
               setState(() => _sortFilter = v);
             },
           ),
-
           const Divider(height: 1),
           Expanded(
-            child: FutureBuilder<List<TaskModel>>(
-              future: _loadTasks(),
+            child: StreamBuilder<List<TaskModel>>(
+              stream: _taskStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -80,10 +76,19 @@ class _TaskPageState extends State<TaskPage> {
                   );
                 }
 
-                final tasks = snapshot.data ?? [];
+                var tasks = snapshot.data ?? [];
 
                 if (tasks.isEmpty) {
                   return const _EmptyView();
+                }
+
+                // 🔹 SORTING (local, safe)
+                if (_sortFilter == 'oldest') {
+                  tasks.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+                } else if (_sortFilter == 'newest') {
+                  tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                } else if (_sortFilter == 'area') {
+                  tasks.sort((a, b) => a.area.compareTo(b.area));
                 }
 
                 return ListView.separated(
@@ -119,28 +124,29 @@ class _FilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        spacing: 40,
+        runSpacing: 5,
         children: [
-          /// SORT FILTER
           Wrap(
             spacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              Text('Filter:     '),
               _chip('Newest', 'newest', sort, onSortChanged),
               _chip('Oldest', 'oldest', sort, onSortChanged),
               _chip('Area', 'area', sort, onSortChanged),
             ],
           ),
-
-          const SizedBox(height: 8),
-
-          /// STATUS FILTER
           Wrap(
             spacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              Text('Status: '),
               _chip('All', 'all', status, onStatusChanged),
               _chip('Pending', 'pending', status, onStatusChanged),
-              _chip('Done', 'done', status, onStatusChanged),
+              _chip('Done', 'completed', status, onStatusChanged),
             ],
           ),
         ],
@@ -161,7 +167,6 @@ class _FilterBar extends StatelessWidget {
     );
   }
 }
-
 class _TaskCard extends StatelessWidget {
   final TaskModel task;
 
@@ -169,6 +174,8 @@ class _TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDone = task.status == 'completed';
+
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -177,7 +184,6 @@ class _TaskCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// TYPE + STATUS
             Row(
               children: [
                 Text(
@@ -188,27 +194,14 @@ class _TaskCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                _StatusBadge(status: task.status),
+                _StatusBadge(isDone: isDone),
               ],
             ),
-
             const SizedBox(height: 8),
-
-            /// AREA
-            Text(
-              'Area: ${task.area}',
-              style: const TextStyle(fontSize: 13),
-            ),
-
-            /// ADDRESS
-            Text(
-              'Address: ${task.address}',
-              style: const TextStyle(fontSize: 13),
-            ),
-
+            Text('Area: ${task.area}', style: const TextStyle(fontSize: 13)),
+            Text('Address: ${task.address}',
+                style: const TextStyle(fontSize: 13)),
             const SizedBox(height: 6),
-
-            /// EMPLOYEE + DATE
             Row(
               children: [
                 Expanded(
@@ -229,20 +222,16 @@ class _TaskCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  String _formatDate(DateTime date) =>
+      '${date.day}/${date.month}/${date.year}';
 }
-
 class _StatusBadge extends StatelessWidget {
-  final String status;
+  final bool isDone;
 
-  const _StatusBadge({required this.status});
+  const _StatusBadge({required this.isDone});
 
   @override
   Widget build(BuildContext context) {
-    final isDone = status == 'done';
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -260,7 +249,6 @@ class _StatusBadge extends StatelessWidget {
     );
   }
 }
-
 class _EmptyView extends StatelessWidget {
   const _EmptyView();
 
@@ -278,4 +266,3 @@ class _EmptyView extends StatelessWidget {
     );
   }
 }
-
